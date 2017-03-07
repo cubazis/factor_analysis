@@ -12,8 +12,9 @@ DIM = data.shape[1]
 
 
 def DistFunc(X, Y):
-  return -(tf.matmul(X, Y) * 2 - tf.reduce_sum(tf.square(tf.transpose(Y)), 0, keep_dims=True) - tf.reduce_sum(
-      tf.square(X), 1, keep_dims=True))
+  return -(tf.matmul(X, Y) * 2 - tf.reduce_sum(
+      tf.square(tf.transpose(Y)), 0, keep_dims=True) - tf.reduce_sum(
+          tf.square(X), 1, keep_dims=True))
 
 
 def KmeansObjFunc(X, mu):
@@ -24,23 +25,19 @@ def KmeansObjFunc(X, mu):
 
   return obj
 
+
 graph = tf.Graph()
 with graph.as_default():
   inputPL = tf.placeholder(tf.float32, shape=(BATCHSIZE, DIM))
 
   ## Initialization
-  weights = tf.Variable(tf.truncated_normal([DIM, K]) * 0.01)
-  bias_pi = tf.Variable(tf.zeros([K]))
-  bias_sigma = tf.Variable(tf.ones([K]) * (-5))
-  ## transform the variables to meet the constrains
-  Var = tf.exp(bias_sigma) + tf.constant(1e-8)
-  logPi = utils.logsoftmax(tf.reshape(bias_pi, (1, K)))
+  mu = tf.Variable(tf.truncated_normal([K, DIM]) * 0.01)
 
   ## compute the log prob and posterior
-  posterior, logProb = posteriorAndMariginalFunc(inputPL, weights, Var, logPi)
+  loss = KmeansObjFunc(inputPL, mu)
 
   optimizer = tf.train.AdamOptimizer(
-      LR, beta1=0.9, beta2=0.99, epsilon=1e-5).minimize(-logProb)
+      LR, beta1=0.9, beta2=0.99, epsilon=1e-5).minimize(loss)
 
 with tf.Session(graph=graph) as session:
   tf.initialize_all_variables().run()
