@@ -14,8 +14,8 @@ print(data.shape)
 DIM = data.shape[1]
 
 
-def log_mix_gaussian_pdf(X, mu, sigma, log_pi):
-  """ pdf of mixture gaussian
+def log_pdf_mix_gaussian(X, mu, sigma, log_pi):
+  """ log pdf of mixture gaussian with covariance sigma * I
 
     Args:
       X: B X D
@@ -52,7 +52,7 @@ with graph.as_default():
   log_pi = ut.logsoftmax(pi)
 
   ## compute the log prob
-  log_pdf = log_mix_gaussian_pdf(inputPL, mu, sigma, log_pi)
+  log_pdf = log_pdf_mix_gaussian(inputPL, mu, sigma, log_pi)
 
   optimizer = tf.train.AdamOptimizer(
       LR, beta1=0.9, beta2=0.99, epsilon=1e-5).minimize(-log_pdf)
@@ -66,7 +66,7 @@ with tf.Session(graph=graph) as session:
 
     print('Iter {:07d}: log likelihood = {}'.format(i + 1, pdf_val))
 
-    if (i % 50) == 0:
+    if (i % 50) == 0 or i == MAX_ITER:
       import pylab as plt
       fig = plt.figure()
       ax = fig.add_subplot(111)
