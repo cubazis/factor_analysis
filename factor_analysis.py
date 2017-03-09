@@ -7,7 +7,7 @@ K = 2
 MAX_ITER = 800
 LR = 1.0e-1
 
-data = np.load('data/data100D.npy')
+data = np.load('data/data2D.npy')
 print(data.shape)
 DIM = data.shape[1]
 
@@ -19,7 +19,7 @@ def log_pdf_factor_analysis(X, W, mu, sigma):
       X: B X D
       W: D X K
       mu: D X 1
-      sigma: K X 1
+      sigma: D X 1
 
     Returns:
       log likelihood
@@ -28,20 +28,25 @@ def log_pdf_factor_analysis(X, W, mu, sigma):
   Pi = tf.constant(float(np.pi))
   diff_vec = X - mu
   sigma_2 = tf.square(sigma)
-  phi = tf.eye(K) * sigma_2
-  M = tf.matmul(W, W, transpose_a=True) + phi
+  # phi = tf.eye(K) * sigma_2
+  # M = tf.matmul(W, W, transpose_a=True) + phi
   # using Sherman-Morrison-Woodbury formula to compute the inverse
-  inv_M = tf.matrix_inverse(M)
-  inv_cov = tf.eye(DIM) / sigma_2 + tf.matmul(
-      tf.matmul(W, inv_M), W, transpose_b=True) / sigma_2
+  # inv_M = tf.matrix_inverse(M)
+  # inv_cov = tf.eye(DIM) / sigma_2 + tf.matmul(
+  #     tf.matmul(W, inv_M), W, transpose_b=True) / sigma_2
 
   # using Sylvester's determinant identity to compute log determinant
   # implementation 1: directly compute determinant
   # log_det = tf.log(tf.matrix_determinant(M)) + 2.0 * (DIM - K) * tf.log(sigma)
 
   # implementation 2: using Cholesky decomposition
-  log_det = 2.0 * tf.reduce_sum(tf.log(tf.diag_part(tf.cholesky(M)))) + 2.0 * (
-      DIM - K) * tf.log(sigma)
+  # log_det = 2.0 * tf.reduce_sum(tf.log(tf.diag_part(tf.cholesky(M)))) + 2.0 * (
+  #     DIM - K) * tf.log(sigma)
+
+  phi = tf.eye(DIM) * sigma_2
+  M = phi + tf.matmul(W, W, transpose_b=True)
+  inv_cov = tf.matrix_inverse(M)
+  log_det = 2.0 * tf.reduce_sum(tf.log(tf.diag_part(tf.cholesky(M))))
 
   log_likelihood = tf.matmul(
       tf.matmul(diff_vec, inv_cov), diff_vec, transpose_b=True)
@@ -56,11 +61,14 @@ def log_pdf_factor_analysis(X, W, mu, sigma):
 graph = tf.Graph()
 with graph.as_default():
   inputPL = tf.placeholder(tf.float32, shape=(BATCHSIZE, DIM))
+  mu_init = tf.placeholder(tf.float32, shape=(DIM))
 
   ## Initialization
   W = tf.Variable(tf.truncated_normal([DIM, K]) * 0.1)
   mu = tf.Variable(tf.zeros([DIM]))
-  sigma = tf.Variable(tf.ones([1]) * 1.0e+0)
+  sigma = tf.Variable(tf.ones([]))
+
+  mu_init_op = tf.assign(mu, mu_init)
 
   ## compute the log prob and posterior
   log_prob = log_pdf_factor_analysis(inputPL, W, mu, sigma)
@@ -71,11 +79,14 @@ with graph.as_default():
 with tf.Session(graph=graph) as session:
   tf.global_variables_initializer().run()
   print('Initialized')
+  session.run(mu_init_op, feed_dict={mu_init: np.mean(data, axis=0)})
+
   for i in range(MAX_ITER):
     _, log_p, W_np, mu_np, sigma_np = session.run(
         [optimizer, log_prob, W, mu, sigma], feed_dict={inputPL: data})
 
     print('Iter {:07d}: Log likelihood = {:e}'.format(i + 1, log_p))
+    print('sigma = {}'.format(sigma_np))
 
     if (i % 50) == 0 or i == MAX_ITER:
       # project into latent space
