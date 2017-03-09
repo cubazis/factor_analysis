@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 import utils
 BATCHSIZE = 10000
-K = 10
+K = 2
 MAX_ITER = 800
 LR = 1.0e-1
 
