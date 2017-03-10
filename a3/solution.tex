@@ -1,14 +1,17 @@
 \documentclass[12pt,letterpaper]{article}
 
 \usepackage{assignments}
-\usepackage{minted}
+% \usepackage{minted}
+\usepackage{graphicx}
+\usepackage{subcaption}
 
 \begin{document}
 
 \title{\vspace{-4ex}ECE521: Inference Algorithms and Machine Learning \\
 University of Toronto\\ \  \\
 Solution to Assignment 3: \\Unsupervised Learning and Probabilistic Models}
-\date{\vspace{-8ex}TA: Use Piazza for Q\&A \\ Due date: Mar. 24 11:59 pm, 2017 \\ Electronic submission to: \href{mailto:ece521ta@gmail.com}{ece521ta@gmail.com} }
+\author{Renjie Liao}
+% \date{\vspace{-8ex}TA: Use Piazza for Q\&A \\ Due date: Mar. 24 11:59 pm, 2017 \\ Electronic submission to: \href{mailto:ece521ta@gmail.com}{ece521ta@gmail.com} }
 
 
 \maketitle
@@ -20,106 +23,44 @@ Solution to Assignment 3: \\Unsupervised Learning and Probabilistic Models}
 
 \subsection{Learning K-means [8 pt.]}
 
-\begin{enumerate}
-\item skip
-\item  
-\item Run the algorithm with $K={1,2,3,4,5}$ and for each of these values of $K$, compute and report the percentage of the data points belonging to each of the $K$ clusters. Comment on how many clusters you think is ``best'' and why? (To answer this, it may be helpful discuss this value in the context of a 2D scatter plot of the data.) Include the 2D scatter plot of data points colored by their cluster assignments. [2 pt.] 
-\item Hold 1/3 of the data out for validation. For each value of $K$ above, cluster the training data and then compute and report the loss for the validation data. How many clusters do you think is best? [2 pt.]
-\end{enumerate}
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{imgs/kmeans_train_loss.png}
+        \caption{1.1.2, Training loss}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{imgs/kmeans_K_1.png}
+        \caption{1.1.3, K = 1}
+    \end{subfigure}
 
-
-
-
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{imgs/kmeans_K_2.png}
+        \caption{1.1.3, K = 2}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{imgs/kmeans_K_3.png}
+        \caption{1.1.3, K = 3}
+    \end{subfigure}
+     
+    %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+    %(or a blank line to force the subfigure onto a new line)
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{imgs/kmeans_K_4.png}
+        \caption{1.1.3, K = 4}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{imgs/kmeans_K_5.png}
+        \caption{1.1.3, K = 5}
+    \end{subfigure}
+\end{figure}
 
 \section{Mixtures of Gaussians}
 
-Mixtures of Gaussians (MoG) can be interpreted as a probabilistic version of K-means clustering. For each data vector, MoG uses a latent variable $z$ to represent the cluster assignment and uses a joint probability model of the cluster assignment variable and the data vector: $P(\bold{x}, z) = P(z)P(\bold{x} \given z)$. For $B$ IID training cases, we have $P({\bold{X},\bold{z}}) = \prod_{n=1}^B P(\bold{x}_n,z_n)$. The Expectation-Maximization (EM) algorithm is the most commonly used technique to learn a MoG. Like the standard $K$-means clustering algorithm, the EM algorithm alternates between updating the cluster assignment variables and the cluster parameters. What makes it different is that instead of making hard assignments of data vectors to cluster centers (the ``$\min$'' operation above), the EM algorithm computes probabilities for different cluster centers, $P(z|\bold{x})$. These are computed from $P(z|\bold{x}) = P(\bold{x},z)/\sum_{z'=1}^K P(\bold{x},z')$.
 
-While the EM algorithm is guaranteed to converge to a local optimum, it suffers from slow convergence. In this assignment, we will explore a different learning algorithm that makes use of gradient descent.
-
-\subsection{The Gaussian cluster model [6 pt.]}
-
-Each of the $K$ mixture components in the MoG model occurs with probability $\pi^k = P(z=k)$. The data model is a multivariate Gaussian distribution centered at the cluster mean (data center) $\boldsymbol{\mu}^k \in \real^D$. We will consider a MoG model where it is assumed that for the multivariate Gaussian for cluster $k$, different data dimensions are independent and have the same standard deviation, ${\sigma^k}$. 
-
-\begin{enumerate}
-
-\item Derive the expression for the latent variable posterior distribution of a data point $P(z\given\bold{x})$ in terms of the MoG parameters, $\{\boldsymbol{\mu}^k, \sigma^k, \pi^k\}$. [2 pt.]
-
-\item Modify the K-means distance function we derived above to compute the \underline{log} probability density function for cluster $k$: $\log \mathcal{N}(\bold{x} \, ; \, \boldsymbol{\mu}^k, {\sigma^k}^2)$ for all pair of $B$ data points and $K$ clusters. Include the snippets of the Python code [2 pt.]
-
-\item Write a \underline{vectorized} Tensorflow Python function that computes the \underline{log} probability of the cluster variable $z$ given the data vector $\bold{x}$: $\log P(z|\bold{x})$. The log Gaussian pdf function implemented above should come in handy. The implementation should use the provided \textit{utils.logsumexp} function. Include the snippets of the Python code and comment on why it is important to use the log-sum-exp function instead of using \textit{tf.reduce\_sum}. [2 pt.]
-\end{enumerate}
+\section{Discover Latent Dimensions}
 
 
-\subsection{Learning the MoG [12 pt.]} 
-
-The marginal data likelihood for the MoG model is as follows (here ``marginal'' refers to summing over the cluster assignment variables):
-\bean
-P(\bold{X}) = \prod_{n=1}^B P(\bold{x}_n) &= \prod_{n=1}^B \sum_{k=1}^K P(z_n=k)P(\bold{x}_n \given z_n=k)\\&= \prod_n \sum_k \pi^k \mathcal{N}(\bold{x}_n\, ; \, \boldsymbol{\mu}^k, {\sigma^k}^2)
-\eean
-The loss function we will minimize is the negative log likelihood $\mathcal{L}(\boldsymbol{\mu}, \sigma, \pi) = - \log P(\bold{X})$. The maximum likelihood estimate (MLE) is a set of the model parameters $\boldsymbol{\mu}, \sigma, \pi$ that maximize the log likelihood or, equivalently, minimize the negative log likelihood.
-
-
-\begin{enumerate}
-  \item Direct gradient-based optimization appears to learn the MoG parameters without inferring the cluster assignment variables, that is, without computing $P(z|\bold{x})$. In fact, this inference is implicit in the gradient computation. Show that for a single training example, the gradient of the marginal log likelihood function is the expected gradient of the log joint probability under its posterior distribution, $\grad_{\boldsymbol{\mu}} \log P(\bold{x}) = \sum_k P(z=k\given \bold{x}) \grad_{\boldsymbol{\mu}} \log P(\bold{x}, z=k)$. [2 pt.] 
-
-{\color{red} 
-\textbf{Answer: }
-    \[ \nabla \log P(\mathbf x) = \frac{\nabla P(x)}{P(x)} = \frac{\nabla \sum_{k=1}^{K}{P(x, z=k)}}{P(x)} = \frac{\sum_{k=1}^{K}{\nabla P(x, z=k)}}{P(x)} = \]
-    \[= \frac{\sum_{k=1}^{K}{P(x,z=k)\frac{\nabla P(x, z=k)}{P(x,z=k)}}}{P(x)} = \frac{\sum_{k=1}^{K}{P(x,z=k)\nabla \log P(x, z=k)}}{P(x)} = \]
-    \[= \sum_{k=1}^{K}{\frac{P(x,z=k)}{P(x)}\nabla \log P(x, z=k)} = \sum_{k=1}^{K}{P(z=k\, |\, x)\nabla \log P(x, z=k)}\]
-}
-
-\item Implement the loss function using log-sum-exp function and perform MLE by directly optimizing the log likelihood function using gradient descent in Tensorflow. Note that the standard deviation has the constraint of $\sigma \in [0, \infty)$. One way to deal with this constraint is to replace $\sigma^2$ with $\exp(\phi)$ in the math and the software, where $\phi$ is an unconstrained parameter. In addition, $\pi$ has a simplex constraint, that is $\sum_k \pi^k = 1$. We can again replace this constrain with unconstrained parameter $\psi$ through a softmax function $\pi^k = \exp(\psi^k)/\sum_{k'}\exp(\psi^{k'})$. A log-softmax function is provided for convenience, \textit{utils.logsoftmax}. For the dataset \textit{data2D.npy}, set $K=3$ and report the best model parameters it has learnt. Include a plot of the loss vs the number of updates. [6 pt.]
-
-\item Hold out 1/3 of the data for validation and for each value of $K={1,2,3,4,5}$, train a MoG model. For each $K$, compute and report the loss function for the validation data and explain which value of $K$ is best. Include a 2D scatter plot of data points colored by their cluster assignments. [2 pt.] 
-
-\item Run both the K-means and the MoG learning algorithms on \textit{data100D.npy}. Comment on how many clusters you think are within the dataset and compare the learnt results of K-means and MoG.  [2 pt.] 
-\end{enumerate}
-
-
-
-\section{Discover Latent Dimensions }
-
-
-\subsection{Factor Analysis [Bonus: 8 pt.]}
-
-So far we have considered K-means and MoG for clustering the data. In both of these cases we assume that each data point `belongs to' or `is generated by' one of K prototypes or causes. In K-means, we make a hard decision about the prototype that each point belongs to, allowing to choose only 1. In MoG, we assign points to clusters in a soft way, reflecting our uncertainty about the underlying cause of each point by modelling the softmax distribution. However, these soft assignments merely represent a probabilistic view over which of the K latent causes generated each point; we still believe that only 1 cause generated it. In this question, we use Factor Analysis to relax this constraint: there is now no restriction on the number of latent causes that generate each point.
-
-Let $\bold{s}_i$ be a vector of real-valued latent variables that have generated point $\bold{x}_i$. We assume that $p(\bold{s}_i) = \mathcal{N}(\mathbf{s}_i\, ;\, \mathbf{0}, I)$.
-Our $\bold{x}_i$'s are also continuous, therefore allowing us to model the likelihood with a Gaussian as well:
-$p(\bold{x}_i | \bold{s}_i) = \mathcal{N}(\bold{x}_i\, ; \, W\mathbf{s}_i + \boldsymbol{\mu}, \Psi)$.
-
-
-%Something along the line of 1) deriving the marginal log likelihood for factor analysis, 2) learning the factor analysis model through directly optimizing the marginal log likelihood. 3) compare the result with PCA
-
-Consider the marginal likelihood defined as:
-\bean
-P(\bold{X}) = \prod_{n=1}^B P(\bold{x}_n) &= \prod_{n=1}^B \int_{\mathbf{s}_n} P(\mathbf{s}_n)P(\bold{x}_n \given \mathbf{s}_n)\\&= \prod_{n=1}^B \int_{\mathbf{s}_n} \mathcal{N}(\mathbf{s}_n\, ;\, \mathbf{0}, I) \mathcal{N}(\bold{x}_n\, ; \, W\mathbf{s}_n + \boldsymbol{\mu}, \Psi)
-\eean
-
-\begin{enumerate}
-  \item Derive the marginal log likelihood of the factor analysis model for a single training example  $\log P(\mathbf{x}) = \log \int_{\mathbf{s}} P(\mathbf{x} \given \mathbf{s})P(\mathbf{s}) = \log \mathcal{N}(\mathbf{x}\, ;\, \boldsymbol{\mu}, \Psi + WW^T) $
-
-{\color{red} 
-\textbf{Answer: }
-Finish the following using joint covariance $\to$ marginal covariance
-\bean
-&s^\T s + (Ws - x)^\T \Psi^{-1} (Ws - x) \\
-=&s^\T s + s^TW^\T\Psi^{-1} Ws + x^\T \Psi^{-1} x - 2x^\T\Psi^{-1} Ws \\
-=&s^\T(I + W^\T\Psi^{-1} W) s - 2(x^\T\Psi^{-1} W) s + x^\T \Psi^{-1} x
-\eean
-}
-  \item Write a TensorFlow implementation that learns Factor Analysis models by directly maximizing the log likelihood function. And learn latent space on notMNIST or MNIST dataset. {\color{red} Need to try this algorithm out to see if it works and decide which dataset gives better results. }
-  %\item Learning Factor Analysis through an approximate inference model, linear VAE.
-\item Geoffrey Hinton's explanation on PCA and FA: Generate a toy dataset of 200 3-dimensional data points $\{\mathbf{x}^{(1)}, \dots, \mathbf{x}^{(200)}\}$ by first generating the latent states $\mathbf{s}$ from a 3-D multivariate Gaussian distribution with zero mean and identity covariance matrix $\mathbf{s} \sim \mathcal{N}(\mathbf{s}\, ; \, \mathbf{0}, I), \quad \mathbf{s} = \begin{bmatrix} s_1\\ s_2\\ s_3 \end{bmatrix} \in \mathbb{R}^3$. Now transform the latent states to 3-dimensional observations $\mathbf{x} = \begin{bmatrix} x_1\\ x_2\\ x_3 \end{bmatrix}$ using the following formula: 
-    \begin{gather*}
-       x_1 = s_1 \\
-       x_2 = s_1 + 0.001s_2 \\
-       x_3 = 10s_3
-    \end{gather*}
-    Use such dataset to train a PCA with a single principle component and a factor analysis model with a single latent dimension. Show that PCA learns the maximum variance direction (i.e. $x_3$ direction) while FA learns the maximum correlation direction(i.e. $x_1+x_2$ direction). 
-\end{enumerate}
 
 \end{document}
 
