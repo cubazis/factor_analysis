@@ -36,7 +36,7 @@ def logsoftmax(input_tensor):
   Returns:
     normalized log probability.
   """
-  return input_tensor - reduce_logsumexp(input_tensor, keep_dims=True)
+  return input_tensor - reduce_logsumexp(input_tensor, reduction_indices=0, keep_dims=True)
 
 
 def pdist(X, Y):
