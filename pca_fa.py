@@ -2,8 +2,8 @@ import numpy as np
 import tensorflow as tf
 
 K = 1
-MAX_ITER = 1000
-LR = 1.0e-1
+MAX_ITER = 5000
+LR = 1.0e-2
 DIM = 3
 
 
@@ -28,6 +28,10 @@ def log_pdf_factor_analysis(X, W, mu, sigma):
   inv_cov = tf.matrix_inverse(M)
   log_det = 2.0 * tf.reduce_sum(tf.log(tf.diag_part(tf.cholesky(M))))
 
+  phi_inv = tf.diag(1 / sigma_2)
+  tmp_mat = tf.eye(K) + tf.matmul(tf.matmul(W, phi_inv, transpose_a=True), W)
+  W_porj = tf.matmul(W, phi_inv, transpose_a=True) / tmp_mat
+
   log_likelihood = tf.matmul(
       tf.matmul(diff_vec, inv_cov), diff_vec, transpose_b=True)
   log_likelihood = tf.diag_part(log_likelihood)
@@ -35,7 +39,7 @@ def log_pdf_factor_analysis(X, W, mu, sigma):
   log_likelihood += log_det
   log_likelihood = tf.reduce_sum(log_likelihood) * (-0.5)
 
-  return log_likelihood
+  return log_likelihood, W_porj
 
 
 def gen_hinton_data():
@@ -71,7 +75,7 @@ with graph.as_default():
   mu_init_op = tf.assign(mu, mu_init)
 
   ## compute the log prob and posterior
-  log_prob = log_pdf_factor_analysis(inputPL, W, mu, sigma)
+  log_prob, W_porj = log_pdf_factor_analysis(inputPL, W, mu, sigma)
 
   optimizer = tf.train.AdamOptimizer(
       LR, beta1=0.9, beta2=0.99, epsilon=1e-5).minimize(-log_prob)
@@ -87,7 +91,7 @@ with tf.Session(graph=graph) as session:
 
   for i in range(MAX_ITER):
     _, log_p, W_np, mu_np, sigma_np = session.run(
-        [optimizer, log_prob, W, mu, sigma], feed_dict={inputPL: data.T})
+        [optimizer, log_prob, W_porj, mu, sigma], feed_dict={inputPL: data.T})
 
     print('Iter {:07d}: Negative Log likelihood = {:e}'.format(i + 1, -log_p))
 
