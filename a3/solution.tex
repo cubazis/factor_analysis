@@ -241,9 +241,13 @@ P(\mathbf{x}) & = \mathcal{N}(\mathbf{x} | \bm{\mu}, \Psi + W W^{\top} )
 \end{figure}
 
 3, [3 pt.]
+
 The first component of PCA is $[-2.72359396e^{-04}, -2.61620560e^{-04}, 9.99999929e^{-01}]$ which approximately corresponds to the maximum variance direction, i.e., $x_3$.
 
-The first component of FA is $[1.01315835e^{-03}, 5.22032240e^{-03}, -8.60824490]$.
+The conditional distribution of $\mathbf{s}$ (posterior) of a new data point $\mathbf{x}^*$ in a FA is:
+ $p(\mathbf{s} | \mathbf{x}^*) = \mathcal{N}\big(\mathbb{s}; \Sigma W^T\Psi^{-1}(\mathbf{x}^* - \boldsymbol{\mu}), \Sigma\big)$ (Eq(4) of Multivariate Gaussian Results) where $\Sigma = (I + W^T\Psi^{-1}W)^{-1}$. Now let us definite $W_{proj} \triangleq \Sigma W^T\Psi^{-1} = (I + W^T\Psi^{-1}W)^{-1}W^T\Psi^{-1}$. Therefore, $W_{proj}$ is the ``principle component'' matrix that transforms the observation data to the latent space of FA instead of the $W$ matrix. 
+ 
+The first component of $W_{proj}$ is $[3.48705414e-01,   5.76612226e-01,  4.26386575e-08]$ which is the maximum correlation direction, i.e. $x_1+x_2$
 
 \end{document}
 
